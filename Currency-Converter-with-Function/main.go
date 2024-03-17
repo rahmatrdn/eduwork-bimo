@@ -7,63 +7,39 @@ import (
 	"strings"
 )
 
-var balanceInput string
-var fromCurrencyInput string
-var toCurrencyInput string
-var percentageInput string
-var balance float64
-var percentage float64
-var convertValue float64
-
 func main() {
 	fmt.Println("\nSelamat datang pada program Currency Converter with Function")
 	fmt.Println("Berikut merupakan mata uang yang kami sediakan, \n(1)USD\n(2)EUR\n(3)GBP\n(4)JPY\n(5)IDR\n(6)Keluar Program")
 	input()
-	output(convertValue, toCurrencyInput)
+}
+
+func readInput(prompt string) string {
+	var input string
+	fmt.Print(prompt)
+	fmt.Scan(&input)
+	return input
 }
 
 func input() {
-	fromCurrencyProcess()
-	toCurrencyProcess()
-	balance = balanceInputProcess()
-	percentage = percentageInputProcess()
-	convertValue = currencyConverter(percentage, balance, toCurrencyInput, fromCurrencyInput)
+	fromCurrencyInput := currencyProcess("Silakan pilih nomor atau ketikkan langsung (sesuai pilihan di atas) mata uang asal : ", "Mohon isi terlebih dahulu mata uang yang ingin Anda konversi\n")
+	toCurrencyInput := currencyProcess("Silakan pilih nomor atau ketikkan langsung (sesuai pilihan di atas) mata uang tujuan : ", "Mohon isi terlebih dahulu mata uang tujuan konversi Anda\n")
+	balance := numberInputProcess("Silakan masukkan saldo Anda : ", "Mohon isi saldo Anda dengan angka")
+	percentage := numberInputProcess("Silakan masukkan persentase perubahan nilai tukar : ", "Mohon isi persentase perubahan dengan angka saja")
+	convertValue := currencyConverter(percentage, balance, toCurrencyInput, fromCurrencyInput)
+	output(convertValue, toCurrencyInput)
 }
 
-func fromCurrencyProcess() {
-	fmt.Print("Silakan pilih nomor atau ketikkan langsung (sesuai pilihan di atas) mata uang asal : ")
+func currencyProcess(prompt1 string, prompt2 string) string {
+	currencyInput := readInput(prompt1)
 
-	_, err := fmt.Scan(&fromCurrencyInput)
-
-	if err != nil {
-		fmt.Println("Mohon isi terlebih dahulu mata uang yang ingin Anda konversi\n")
-		fromCurrencyProcess()
-	} else if validateChoice(fromCurrencyInput) == "failed" {
-		fromCurrencyProcess()
-	} else if validateChoice(fromCurrencyInput) == "quit" {
+	if validateChoice(currencyInput) == "failed" {
+		return currencyProcess(prompt1, prompt2)
+	} else if validateChoice(currencyInput) == "quit" {
 		fmt.Println("Terima kasih telah menggunakan program ini.\n")
 		os.Exit(0)
-	} else {
-		fromCurrencyInput = validateChoice(fromCurrencyInput)
 	}
-}
 
-func toCurrencyProcess() {
-	fmt.Print("Silakan pilih nomor atau ketikkan langsung (sesuai pilihan di atas) mata uang tujuan : ")
-
-	_, err := fmt.Scan(&toCurrencyInput)
-
-	if err != nil {
-		fmt.Println("Mohon isi terlebih dahulu mata uang tujuan konversi Anda\n")
-		toCurrencyProcess()
-	} else if validateChoice(toCurrencyInput) == "failed" {
-		toCurrencyProcess()
-	} else if validateChoice(toCurrencyInput) == "quit" {
-		fmt.Println("Terima kasih telah menggunakan program ini.\n")
-		os.Exit(0)
-	} else {
-		toCurrencyInput = validateChoice(toCurrencyInput)
-	}
+	return validateChoice(currencyInput)
 }
 
 func validateChoice(input string) string {
@@ -93,32 +69,16 @@ func validateChoice(input string) string {
 	return "failed"
 }
 
-func balanceInputProcess() float64 {
-	fmt.Print("Silakan masukkan saldo Anda : ")
-
-	fmt.Scan(&balanceInput)
-	balance, err := strconv.ParseFloat(balanceInput, 64)
+func numberInputProcess(prompt1 string, prompt2 string) float64 {
+	numberInput := readInput(prompt1)
+	validNumber, err := strconv.ParseFloat(numberInput, 64)
 
 	if err != nil {
-		fmt.Println("Mohon isi saldo Anda dengan angka")
-		return balanceInputProcess()
+		fmt.Println(prompt2)
+		return numberInputProcess(prompt1, prompt2)
 	}
 
-	return balance
-}
-
-func percentageInputProcess() float64 {
-	fmt.Print("Silakan masukkan persentase perubahan nilai tukar : ")
-
-	fmt.Scan(&percentageInput)
-	percentage, err := strconv.ParseFloat(percentageInput, 64)
-
-	if err != nil {
-		fmt.Println("Mohon isi persentase perubahan dengan angka saja")
-		return percentageInputProcess()
-	}
-
-	return percentage
+	return validNumber
 }
 
 // Penyesuaian nilai kurs mata uang dengan persentase perubahan
