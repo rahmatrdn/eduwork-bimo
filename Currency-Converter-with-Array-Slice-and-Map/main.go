@@ -43,7 +43,7 @@ func updateConversionValues() {
 	for {
 		now := time.Now()
 
-		// if already 18.00, updates the data
+		// if already 18.30, updates the data
 		if now.Hour() >= 18 && now.Minute() >= 30 {
 			idrConversionValue = []float64{1, 0.000066136435, 0.000050247904, 0.0097582167, 0.000055865304}
 			usdConversionValue = []float64{16591.762, 1, 0.80501252, 152.02944, 0.92081379}
