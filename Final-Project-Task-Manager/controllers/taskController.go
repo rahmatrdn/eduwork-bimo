@@ -3,11 +3,11 @@ package controllers
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"eduwork-bimo/Final-Project-Task-Manager/entities"
+	"eduwork-bimo/Final-Project-Task-Manager/helper"
 	"eduwork-bimo/Final-Project-Task-Manager/middlewares"
 	"eduwork-bimo/Final-Project-Task-Manager/models"
 
@@ -18,16 +18,20 @@ func GetTasks(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := middlewares.GetUserIDFromToken(r)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			response := map[string]string{"error": "Unauthorized"}
+			helper.ResponseJSON(w, http.StatusUnauthorized, response)
 			return
 		}
+
 		taskModel := models.NewTaskModel(db)
 		tasks, err := taskModel.GetAll(userID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			response := map[string]string{"error": "Failed to fetch tasks"}
+			helper.ResponseJSON(w, http.StatusInternalServerError, response)
 			return
 		}
-		json.NewEncoder(w).Encode(tasks)
+
+		helper.ResponseJSON(w, http.StatusOK, tasks)
 	}
 }
 
@@ -35,14 +39,23 @@ func CreateTask(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := middlewares.GetUserIDFromToken(r)
 		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			response := map[string]string{"error": "Unauthorized"}
+			helper.ResponseJSON(w, http.StatusUnauthorized, response)
 			return
 		}
 
 		var task entities.Task
 		err = json.NewDecoder(r.Body).Decode(&task)
 		if err != nil {
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			response := map[string]string{"error": "Invalid request payload"}
+			helper.ResponseJSON(w, http.StatusBadRequest, response)
+			return
+		}
+
+		// Contoh validasi sederhana untuk payload
+		if task.Title == "" {
+			response := map[string]string{"error": "Title is required"}
+			helper.ResponseJSON(w, http.StatusBadRequest, response)
 			return
 		}
 
@@ -50,13 +63,16 @@ func CreateTask(db *sql.DB) http.HandlerFunc {
 		taskModel := models.NewTaskModel(db)
 		err = taskModel.Create(&task)
 		if err != nil {
-			fmt.Println(userID)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			response := map[string]string{"error": "Failed to create task"}
+			helper.ResponseJSON(w, http.StatusInternalServerError, response)
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(task)
+		response := map[string]interface{}{
+			"message": "Task created successfully",
+			"task":    task,
+		}
+		helper.ResponseJSON(w, http.StatusCreated, response)
 	}
 }
 
@@ -64,22 +80,21 @@ func UpdateTask(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := middlewares.GetUserIDFromToken(r)
 		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			helper.ResponseJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}
 
 		taskIDStr := mux.Vars(r)["id"]
 		taskID, err := strconv.Atoi(taskIDStr)
-		fmt.Printf("Debug: TaskID : %s\n", taskIDStr)
 		if err != nil {
-			http.Error(w, "Invalid task ID", http.StatusBadRequest)
+			helper.ResponseJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid task ID"})
 			return
 		}
 
 		var task entities.Task
 		err = json.NewDecoder(r.Body).Decode(&task)
 		if err != nil {
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			helper.ResponseJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 			return
 		}
 
@@ -89,12 +104,15 @@ func UpdateTask(db *sql.DB) http.HandlerFunc {
 		taskModel := models.NewTaskModel(db)
 		err = taskModel.Update(&task)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			helper.ResponseJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(task)
+		response := map[string]interface{}{
+			"message": "Task updated successfully",
+			"task":    task,
+		}
+		helper.ResponseJSON(w, http.StatusOK, response)
 	}
 }
 
@@ -102,24 +120,27 @@ func DeleteTask(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID, err := middlewares.GetUserIDFromToken(r)
 		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			response := map[string]string{"error": "failed to get user ID"}
+			helper.ResponseJSON(w, http.StatusBadRequest, response)
 			return
 		}
 
 		taskIDStr := mux.Vars(r)["id"]
 		taskID, err := strconv.Atoi(taskIDStr)
 		if err != nil {
-			http.Error(w, "Invalid task ID", http.StatusBadRequest)
+			response := map[string]string{"error": "Invalid task ID"}
+			helper.ResponseJSON(w, http.StatusBadRequest, response)
 			return
 		}
 
 		taskModel := models.NewTaskModel(db)
 		err = taskModel.Delete(taskID, userID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			response := map[string]string{"error": "failed to delete task"}
+			helper.ResponseJSON(w, http.StatusBadRequest, response)
 			return
 		}
 
-		w.WriteHeader(http.StatusNoContent)
+		helper.ResponseJSON(w, http.StatusNoContent, nil)
 	}
 }
