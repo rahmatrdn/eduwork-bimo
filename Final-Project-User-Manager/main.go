@@ -1,9 +1,19 @@
 package main
 
 import (
+	"eduwork-bimo/Final-Project-User-Manager/config"
+	"eduwork-bimo/Final-Project-User-Manager/routes"
 	"fmt"
+	"log"
+	"net/http"
 )
 
 func main() {
-	fmt.Println("Initialize project")
+	db := config.DBConn()
+	defer db.Close()
+
+	router := routes.SetupRoutes(db)
+
+	fmt.Println("Server running on http://localhost:3000")
+	log.Fatal(http.ListenAndServe(":3000", router))
 }
