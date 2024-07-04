@@ -154,3 +154,59 @@ func UpdateOrderStatus(db *sql.DB) http.HandlerFunc {
 		helper.ResponseJSON(w, http.StatusOK, response)
 	}
 }
+
+func GetOrderHistory(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userId, err := middlewares.GetUserIdFromToken(r)
+		if err != nil {
+			helper.ResponseJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+			return
+		}
+
+		orderModel := models.NewOrderModel(db)
+
+		// Fetch completed order IDs for the user
+		orderIDs, err := orderModel.GetOrderIdsFromUserId(userId, "completed")
+		if err != nil {
+			response := map[string]string{"error": "Failed to fetch order IDs"}
+			helper.ResponseJSON(w, http.StatusInternalServerError, response)
+			return
+		}
+
+		// Initialize map to store orders by order_id
+		orderHistory := make(map[int]map[string]interface{})
+		var grandTotal float64
+
+		// Iterate over each order ID and fetch order items
+		for _, orderID := range orderIDs {
+			orderItems, err := orderModel.GetOrderItem(orderID)
+			if err != nil {
+				response := map[string]string{"error": "Failed to fetch order items"}
+				helper.ResponseJSON(w, http.StatusInternalServerError, response)
+				return
+			}
+
+			// Calculate total for the current order
+			var orderTotal float64
+			for _, item := range orderItems {
+				orderTotal += float64(item.Quantity) * item.Price
+			}
+
+			// Store order details in the map
+			orderHistory[orderID] = map[string]interface{}{
+				"order_items": orderItems,
+				"total":       orderTotal,
+			}
+
+			grandTotal += orderTotal
+		}
+
+		response := map[string]interface{}{
+			"message":     "Order History",
+			"orders":      orderHistory,
+			"grand_total": grandTotal,
+		}
+
+		helper.ResponseJSON(w, http.StatusOK, response)
+	}
+}

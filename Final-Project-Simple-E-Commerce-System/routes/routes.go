@@ -33,6 +33,7 @@ func SetupRoutes(db *sql.DB) *mux.Router {
 	api.HandleFunc("/order", controllers.CreateOrder(db)).Methods("POST")
 	api.HandleFunc("/order", controllers.GetOrderSummary(db)).Methods("GET")
 	api.HandleFunc("/order", controllers.UpdateOrderStatus(db)).Methods("PUT")
+	api.HandleFunc("/order/history", controllers.GetOrderHistory(db)).Methods("GET")
 
 	return router
 }

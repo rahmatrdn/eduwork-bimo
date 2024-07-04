@@ -116,6 +116,34 @@ func (m OrderModel) GetOrderIdFromUserId(userID int, status string) (int, error)
 	return orderID, nil
 }
 
+func (m OrderModel) GetOrderIdsFromUserId(userID int, status string) ([]int, error) {
+	rows, err := m.db.Query("SELECT order_id FROM orders WHERE user_id = ? AND status = ?", userID, status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orderIDs []int
+	for rows.Next() {
+		var orderID int
+		if err := rows.Scan(&orderID); err != nil {
+			return nil, err
+		}
+		orderIDs = append(orderIDs, orderID)
+	}
+
+	// Check if any rows were returned
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if len(orderIDs) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
+	return orderIDs, nil
+}
+
 func (m OrderModel) GetOrderItem(orderID int) ([]entities.OrderItem, error) {
 	// fetch the items from the order_items table using the order_id
 	rows, err := m.db.Query("SELECT order_item_id, order_id, product_id, quantity, price FROM order_items WHERE order_id = ?", orderID)
