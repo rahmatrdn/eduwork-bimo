@@ -1,0 +1,52 @@
+package models
+
+import (
+	"database/sql"
+
+	"eduwork-bimo/Final-Project-Simple-E-Commerce-System/entities"
+	helpers "eduwork-bimo/Final-Project-Simple-E-Commerce-System/helpers"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+type UserModel struct {
+	db *sql.DB
+}
+
+func NewUserModel(db *sql.DB) *UserModel {
+	return &UserModel{db: db}
+}
+
+func (u UserModel) GetByUsername(username string) (*entities.User, error) {
+	row := u.db.QueryRow("SELECT user_id, full_name, phone_number, username, email, password, role FROM users WHERE username = ?", username)
+	var user entities.User
+	err := row.Scan(&user.UserID, &user.FullName, &user.PhoneNumber, &user.Username, &user.Email, &user.Password, &user.Role)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (m UserModel) Create(user *entities.User) error {
+	_, err := m.db.Exec("INSERT INTO users (full_name, username, email, password, phone_number) VALUES (?, ?, ?, ?, ?)", user.FullName, user.Username, user.Email, user.Password, user.PhoneNumber)
+	return err
+}
+
+func (m UserModel) Update(user *entities.User) error {
+	_, err := m.db.Exec("UPDATE users SET full_name = ?, username = ?, email = ?, phone_number = ? WHERE user_id = ?", user.FullName, user.Username, user.Email, user.PhoneNumber, user.UserID)
+	return err
+}
+
+func (m UserModel) ResetPassword(user *entities.User) error {
+	hashedPass, err := helpers.EncryptPass(user.Password)
+	_, err = m.db.Exec("UPDATE users SET password = ? WHERE nomor_telepon = ?", hashedPass, user.PhoneNumber)
+	return err
+}
+
+func (m UserModel) DeleteUser(userID int) error {
+	_, err := m.db.Exec("DELETE FROM users WHERE user_id = ?", userID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
